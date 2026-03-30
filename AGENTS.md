@@ -76,6 +76,7 @@ just ui check       # run frontend verification
 ## unRAID Calibre Deployment Notes
 
 - Current live rebuilt Calibre library: `/mnt/m2cache/calibre-cleanup-0326/CalibreLibrary-New`
+- Direct LAN SSH fallback for the unRAID host: `ssh root@192.168.1.101`
 - Existing live Calibre access:
   - Calibre-Web: `http://100.85.214.86:8083`
   - Calibre desktop admin: `https://100.85.214.86:8181`
