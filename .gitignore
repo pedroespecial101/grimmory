@@ -54,3 +54,8 @@ booklore-api/src/main/resources/application-local.yaml
 /frontend/.yarn/
 /tools/release/node_modules
 /tools/release/.yarn/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key

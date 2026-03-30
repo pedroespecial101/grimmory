@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "grimmory",
+  "project_id": "51d049f1-02f6-43b6-b674-04ad710c83de"
+}
