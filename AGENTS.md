@@ -75,21 +75,26 @@ just ui check       # run frontend verification
 
 ## unRAID Calibre Deployment Notes
 
-- Current live rebuilt Calibre library: `/mnt/m2cache/calibre-cleanup-0326/CalibreLibrary-New`
+- Current Grimmory primary library: `/mnt/m2cache/grimmory-test/CalibreLibrary-GrimmoryTest`
+- Retained legacy Calibre library for rollback only: `/mnt/m2cache/calibre-cleanup-0326/CalibreLibrary-New`
 - Direct LAN SSH fallback for the unRAID host: `ssh root@192.168.1.101`
-- Existing live Calibre access:
+- Retained Calibre access during rollback window:
   - Calibre-Web: `http://100.85.214.86:8083`
   - Calibre desktop admin: `https://100.85.214.86:8181`
 - Existing unRAID container defaults from the live Calibre stacks:
   - `PUID=99`
   - `PGID=100`
   - `TZ=Europe/London`
-- The live Calibre library remains the source reference while Grimmory testing is in progress.
-- Grimmory write testing must target a cloned library only, never the live Calibre tree.
-- If BookDrop is used for Grimmory testing, keep it as a sibling of the cloned library, not inside the library root.
+- Grimmory is now the source of truth for the primary library on unRAID.
+- Do not write to the retained legacy Calibre tree during the rollback window.
+- Grimmory BookDrop remains a sibling of the primary library, not inside the library root:
+  - `/mnt/m2cache/grimmory-test/bookdrop`
 - Do not design or deploy a steady-state shared-write setup between Calibre and Grimmory.
-- Calibre-side one-writer-at-a-time rule still applies to the live library:
-  - Calibre-Web edits
+- MAM/qBittorrent ingestion remains part of the primary Grimmory flow:
+  - seeding root: `/mnt/m2cache/MAM-QBTorrent`
+  - new-completion hardlinks into `/mnt/m2cache/grimmory-test/bookdrop`
+- If rollback is required, re-enable exactly one Calibre-side writer against the retained legacy tree:
+  - Calibre-Web
   - full Calibre desktop
   - `calibredb` or tag refresh scripts
   - enrichment or recovery scripts
