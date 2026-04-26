@@ -158,6 +158,52 @@ Then in Grimmory:
 4. finalize import
 5. verify the files now exist in the cloned library, not the live Calibre tree
 
+### 5a. MAM/qBittorrent BookDrop Handoff
+
+The live MAM/qBittorrent handoff has an immediate signal path plus a one-minute catchall:
+
+```bash
+docker exec MAM-QBTorrent wget -qO- http://127.0.0.1:18080/api/v2/app/preferences | jq -r '.autorun_enabled, .autorun_program'
+cat /boot/config/plugins/dynamix/grimmory-bookdrop-qbit.cron
+ps -ef | grep -E 'watch_bookdrop_requests|reconcile_bookdrop_from_qbit' | grep -v grep
+```
+
+Expected result:
+
+- qBittorrent autorun is enabled.
+- autorun points at `/config/scripts/request_bookdrop_link.sh "%L" "%F" "%I" "%N"`.
+- cron contains `@reboot /mnt/user/appdata/MAM-QBTorrent/scripts/watch_bookdrop_requests.sh`, the one-minute reconciler, and the MAM Dynamic Seedbox updater.
+- the watcher is running for the current boot.
+
+Validate a linked file without moving or deleting the seeded source:
+
+```bash
+stat -c '%d:%i links=%h owner=%u:%g %n' \
+  '/mnt/m2cache/MAM-QBTorrent/media/books/<file>' \
+  '/mnt/m2cache/grimmory-test/bookdrop/<file>'
+docker exec MAM-QBTorrent wget -qO- 'http://127.0.0.1:18080/api/v2/torrents/info?filter=completed' \
+  | jq -r '.[] | select(.name=="<torrent name>") | {name,category,state,progress,content_path,hash}'
+docker logs --since '10 minutes ago' grimmory 2>&1 | grep -Ei 'bookdrop|<file>|error|warn'
+```
+
+Troubleshooting paths:
+
+- Linker log: `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-linker.log`
+- MAM Dynamic Seedbox log: `/mnt/user/appdata/MAM-QBTorrent/scripts/mam-dynamic-seedbox.log`
+- Request queue: `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-requests.d/`
+- Linked markers: `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-linked.d/`
+- Pending records: `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-pending.d/`
+- Conflict records: `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-conflicts.d/`
+
+Important traps:
+
+- The qBittorrent hook is for speed. The one-minute reconciler is the reliability path and should stay enabled.
+- The container hook only writes a request. Hardlinking must happen on the host because Docker cannot hardlink between the separate `/downloads` and `/bookdrop` bind mounts.
+- Linked files should land directly in `/mnt/m2cache/grimmory-test/bookdrop`. A persistent `/bookdrop/books` directory can hide new files from Grimmory's immediate watcher.
+- Keep `/mnt/m2cache/MAM-QBTorrent` and `/mnt/m2cache/grimmory-test/bookdrop` on the same filesystem/cache device. unRAID mover or share/cache changes can break hardlinking.
+- Marker files prove only that the handoff linked into BookDrop. They do not prove Grimmory finalized the import.
+- MouseSearch runs on OCI while `MAM-QBTorrent` announces from unRAID. If MAM reports `Unrecognized host/PassKey`, run `/mnt/user/appdata/MAM-QBTorrent/scripts/update_mam_dynamic_seedbox.sh` on unRAID and reannounce the torrent. Do not fix this by enabling MouseSearch's OCI-side Dynamic IP Updater unless MouseSearch and qBittorrent share the same public egress IP.
+
 ### 6. Restart Validation
 
 ```bash
@@ -169,6 +215,9 @@ Recheck:
 - health endpoint
 - library presence
 - BookDrop status
+- qBittorrent autorun preference
+- request watcher process
+- catchall cron entry
 - recent logs
 
 ## Recommended Smoke Tests

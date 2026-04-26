@@ -113,6 +113,9 @@ Keep as the active primary stack:
 - `/mnt/user/appdata/grimmory-mariadb`
 - `/mnt/user/appdata/MAM-QBTorrent`
 - `/mnt/m2cache/MAM-QBTorrent`
+- `/boot/config/plugins/dynamix/grimmory-bookdrop-qbit.cron`
+
+The active MAM/qBittorrent handoff is part of the Grimmory primary flow. qBittorrent's finished-torrent hook writes request files, a host watcher hardlinks them into the BookDrop root, and a one-minute reconciler catches anything missed. Do not replace this with a container-side hardlink from `/downloads` to `/bookdrop`; that path fails across Docker bind mounts. Marker files in `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-linked.d/` mean the file reached BookDrop, not that Grimmory completed import.
 
 Disable now and delete only after the 30-day rollback window if no rollback is needed:
 

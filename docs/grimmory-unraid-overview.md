@@ -43,6 +43,23 @@ Use the existing Grimmory workspace on unRAID as the primary layout:
 
 Keep BookDrop as a sibling of the cloned library, not inside the library root. That avoids double-discovery where Grimmory could see the same files both as library content and as pending BookDrop imports.
 
+## MAM/qBittorrent BookDrop Handoff
+
+The live MAM flow uses two paths so imports are fast but still recoverable:
+
+- qBittorrent runs `/config/scripts/request_bookdrop_link.sh "%L" "%F" "%I" "%N"` when a torrent finishes.
+- That container hook only writes a request file into `/config/scripts/bookdrop-requests.d/`.
+- The host watcher `/mnt/user/appdata/MAM-QBTorrent/scripts/watch_bookdrop_requests.sh` polls those requests every two seconds and runs the host hardlinker.
+- The catchall reconciler `/mnt/user/appdata/MAM-QBTorrent/scripts/reconcile_bookdrop_from_qbit.sh` runs every minute from `/boot/config/plugins/dynamix/grimmory-bookdrop-qbit.cron`.
+- The host hardlinker is `/mnt/user/appdata/MAM-QBTorrent/scripts/link_completed_to_bookdrop_host.sh`.
+- The MAM Dynamic Seedbox updater `/mnt/user/appdata/MAM-QBTorrent/scripts/update_mam_dynamic_seedbox.sh` also runs from unRAID cron so MAM sees the same egress path as qBittorrent.
+
+The actual hardlink must happen on the host paths. Inside the qBittorrent container, `/downloads` and `/bookdrop` are separate bind mounts, and hardlinks across those mounts fail with `Cross-device link` even though both host paths live under `/mnt/m2cache`.
+
+Linked files are placed directly under `/mnt/m2cache/grimmory-test/bookdrop`, not under a persistent `books/` subfolder. Grimmory watches the BookDrop root and only scans nested content immediately when a new top-level directory appears; putting new files under an already-existing category folder can delay detection until a periodic rescan.
+
+MouseSearch itself runs on OCI. Its Dynamic IP Updater must not be used for the live unRAID `MAM-QBTorrent` client unless both services share the same public egress IP. If MAM reports `Unrecognized host/PassKey`, check `/mnt/user/appdata/MAM-QBTorrent/scripts/mam-dynamic-seedbox.log` and update from unRAID.
+
 ## Retained Legacy Calibre Services
 
 The old Calibre interfaces are retained only for rollback:
@@ -56,6 +73,8 @@ Those services point at the retained legacy Calibre library and should remain st
 
 - Grimmory remains the only active writer for the primary library
 - BookDrop ingest stays one-way from qBittorrent into Grimmory
+- qBittorrent seed files are never moved or deleted by the handoff scripts
+- BookDrop marker files mean linked into BookDrop, not successfully imported into Grimmory
 - The retained Calibre tree is used only if rollback becomes necessary
 - The rollback window should expire before any permanent deletion of the retained Calibre surfaces
 

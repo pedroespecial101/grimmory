@@ -61,3 +61,6 @@ booklore-api/src/main/resources/application-local.yaml
 
 # Local deployment credentials
 /docs/private/credentials.md
+
+# Local Beads/Dolt runtime state
+.beads/

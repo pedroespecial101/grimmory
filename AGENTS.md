@@ -93,6 +93,15 @@ just ui check       # run frontend verification
 - MAM/qBittorrent ingestion remains part of the primary Grimmory flow:
   - seeding root: `/mnt/m2cache/MAM-QBTorrent`
   - new-completion hardlinks into `/mnt/m2cache/grimmory-test/bookdrop`
+  - qBittorrent immediate hook: `/config/scripts/request_bookdrop_link.sh "%L" "%F" "%I" "%N"`
+  - host request watcher: `/mnt/user/appdata/MAM-QBTorrent/scripts/watch_bookdrop_requests.sh`
+  - host catchall reconciler: `/mnt/user/appdata/MAM-QBTorrent/scripts/reconcile_bookdrop_from_qbit.sh`
+  - MAM Dynamic Seedbox updater: `/mnt/user/appdata/MAM-QBTorrent/scripts/update_mam_dynamic_seedbox.sh`
+  - persistent cron: `/boot/config/plugins/dynamix/grimmory-bookdrop-qbit.cron`
+- Keep MAM hardlinks host-side. Docker cannot hardlink between the separate `/downloads` and `/bookdrop` bind mounts even when the host paths are on the same btrfs filesystem.
+- MouseSearch runs on OCI, but `MAM-QBTorrent` announces from unRAID. If MAM reports `Unrecognized host/PassKey`, update Dynamic Seedbox from unRAID with the qB-specific updater; do not enable MouseSearch's OCI-side dynamic IP updater for this client.
+- Put linked files directly in the BookDrop root. Grimmory watches `/bookdrop` and only scans subdirectories immediately when a new top-level directory is created; a long-lived `/bookdrop/books` folder can delay detection until periodic rescan.
+- Marker files under `/mnt/user/appdata/MAM-QBTorrent/scripts/bookdrop-linked.d/` mean "linked into BookDrop", not "imported into Grimmory".
 - If rollback is required, re-enable exactly one Calibre-side writer against the retained legacy tree:
   - Calibre-Web
   - full Calibre desktop
