@@ -1,3 +1,9 @@
+## [3.2.4] (2026-08-06)
+
+### Deployment
+
+* **unraid:** upgrade production grimmory container stack on unRAID from v3.0.2 to v3.2.4
+
 ## [2.3.0](https://github.com/grimmory-tools/grimmory/compare/v2.2.6...v2.3.0) (2026-03-21)
 
 ### Features
